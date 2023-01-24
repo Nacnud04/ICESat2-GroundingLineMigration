@@ -207,7 +207,7 @@ class Dataset:
         for filename in self.datafiles:
             granule = self.openfilename(filename)
             granpoly = granule.captureCoverage()
-            if granpoly.intersection(polygon).area > 0:
+            if polygon.overlaps(granpoly).any() == True:
                 yield filename
 
     def returnTrackDataByRegion(self, region, orientation=None, name=None, num=None, strength=None):
@@ -312,11 +312,13 @@ class Dataset:
         trackdata : list
               List of trackdata tuples within the polygon
         """
+        alldata = ()
         for filename in self.datafiles:
             granule = self.openfilename(filename)
             granpoly = granule.captureCoverage()
-            if granpoly.intersection(polygon).area > 0:
-                yield granule.getTrackData()
+            if polygon.overlaps(granpoly).any() == True:
+                alldata = alldata + granule.getTrackData()
+        return alldata
 
     @staticmethod
     def showBackgroundMap():
@@ -341,22 +343,6 @@ class Dataset:
 
         basemap = Basemap(path)
         basemap.plotTracks(alltrackdata, datatype=tuple, local=local)
-
-    #### DEPRECIATED ####
-    def listDates(self):
-        
-        starts = []
-
-        for i in range(len(self.datafiles)):
-
-            granule = self.openspecific(i)
-            start, end = granule.returnDates()
-            starts.append(start)
-            granule.close()
-
-        plt.scatter(starts, [0]*len(starts))
-        plt.show()
-
 
 class Granule:
 
@@ -475,7 +461,7 @@ class Granule:
         maxlat, minlat = np.max(alllats), np.min(alllats)
         maxlon, minlon = np.max(alllons), np.min(alllons)
         coveredpolygon = Polygon([(minlon,minlat),(maxlon,minlat),(maxlon,maxlat),(minlon,maxlat),(minlon,minlat)])
-        return coveredpolygon
+        return gpd.GeoSeries([coveredpolygon], crs="EPSG:4326")
 
     def close(self):
         """Closes the h5 file"""
