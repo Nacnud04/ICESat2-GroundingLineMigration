@@ -190,6 +190,26 @@ class Dataset:
                     filenames.extend(self.coverage[highkey][lowkey])
         return filenames
 
+    def returnFilenamesByPolygon(self, polygon):
+        """
+        Take a polygon and return all filenames which have data within the desired polygon
+
+        Parameters
+        ----------
+        polygon : class shapely.Polygon
+              Polygon for which to extract data from
+
+        Returns
+        -------
+        filenames : list
+              List of filenames within the polygon
+        """
+        for filename in self.datafiles:
+            granule = self.openfilename(filename)
+            granpoly = granule.captureCoverage()
+            if granpoly.intersection(polygon).area > 0:
+                yield filename
+
     def returnTrackDataByRegion(self, region, orientation=None, name=None, num=None, strength=None):
         """
         Returns file track data if in desired region
@@ -277,6 +297,26 @@ class Dataset:
                     alltrackdata.append(lasertrack)
 
         return alltrackdata
+
+    def returnTrackDataByPolygon(self, polygon):
+        """
+        Returns track data for all tracks within specified polygon.
+
+        Parameters
+        ----------
+        polygon : class shapely.Polygon
+              Polygon for which to extract data from
+
+        Returns
+        -------
+        trackdata : list
+              List of trackdata tuples within the polygon
+        """
+        for filename in self.datafiles:
+            granule = self.openfilename(filename)
+            granpoly = granule.captureCoverage()
+            if granpoly.intersection(polygon).area > 0:
+                yield granule.getTrackData()
 
     @staticmethod
     def showBackgroundMap():
@@ -416,6 +456,26 @@ class Granule:
 
         trackmap = Basemap(path)
         trackmap.plotTracks(self.lasers, datatype=object, local=local)
+
+    def captureCoverage(self):
+        """
+        Finds maximum and minimum lat and lon of granule
+        
+        Returns
+        -------
+        coveredpolygon : class shapely.Polygon
+              Rectangular shapely polygon which all data is covered by
+        """
+        alllats, alllons = np.array([]), np.array([])
+        for laser in self.lasers:
+            data = laser.getTrackData()
+            lat, lon = data[0], data[1]
+            alllats = np.append(alllats, lat)
+            alllons = np.append(alllons, lon)
+        maxlat, minlat = np.max(alllats), np.min(alllats)
+        maxlon, minlon = np.max(alllons), np.min(alllons)
+        coveredpolygon = Polygon([(minlon,minlat),(maxlon,minlat),(maxlon,maxlat),(minlon,maxlat),(minlon,minlat)])
+        return coveredpolygon
 
     def close(self):
         """Closes the h5 file"""
