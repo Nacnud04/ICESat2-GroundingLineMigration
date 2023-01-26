@@ -240,7 +240,7 @@ class Dataset:
             granule = Granule(self.folder, filename)
             trackdata = granule.getTrackData()
             for lasertrack in trackdata:
-                (lat, lon, time, height, metadata, granuledata) = lasertrack
+                (lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata) = lasertrack
                 if orientation and orientation == granuledata["orientation"]:
                     alltrackdata.append(lasertrack)
                 elif name and name == metadata["name"]:
@@ -284,7 +284,7 @@ class Dataset:
             granule = Granule(self.folder, filename)
             trackdata = granule.getTrackData()
             for lasertrack in trackdata:
-                (lat, lon, time, height, metadata, granuledata) = lasertrack
+                (lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata) = lasertrack
                 if orientation and orientation == granuledata["orientation"]:
                     alltrackdata.append(lasertrack)
                 elif name and name == metadata["name"]:
@@ -528,18 +528,21 @@ class Laser:
 
         try:
             self.land_ice_segments = self.data["land_ice_segments"]
+            fit_statistics = self.land_ice_segments["fit_statistics"]
+            self.dh_fit_dx = fit_statistics["dh_fit_dx"][()] #Along tack slope from along track segment fit
+            self.dh_fit_dx_sigma = fit_statistics["dh_fit_dx_sigma"][()] #Propagated error in the along-track segment slope
         except KeyError:
             raise Exception(f"land_ice_segments in file: {filename} not found")
 
-        try :
-            self.segment_quality = self.data["segment_quality"]
-        except KeyError:
-            warnings.warn(f"segment_quality in file: {filename} not found")
+        #try :
+        #    self.segment_quality = self.data["segment_quality"]
+        #except KeyError:
+        #    warnings.warn(f"segment_quality in file: {filename} not found")
 
-        try :
-            self.residual_histogram = self.data["residual_histogram"]
-        except KeyError:
-            warnings.warn(f"residual_histogram in file: {filename} not found")
+        #try :
+        #    self.residual_histogram = self.data["residual_histogram"]
+        #except KeyError:
+        #    warnings.warn(f"residual_histogram in file: {filename} not found")
 
         if orientation == "Forward":
             self.beamnum = Laser.gt2beamnumForwards[name]
@@ -583,14 +586,13 @@ class Laser:
         Returns
         -------
         trackdata : tuple
-            Data about laser track. Formatted as (lat, lon, time, h_li, metadata, granuledata)
+            Data about laser track. Formatted as (lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata)
         """
 
         lat = self.land_ice_segments["latitude"][()]
         lon = self.land_ice_segments["longitude"][()]
         time = self.land_ice_segments["delta_time"][()]
-        h_li = self.land_ice_segments["h_li"][()]
-        return (lat, lon, time, h_li, self.metadata, self.granuledata)
+        return (lat, lon, time, self.dh_fit_dx, self.dh_fit_dx_sigma, self.metadata, self.granuledata)
 
 
 class Basemap:
@@ -620,7 +622,7 @@ class Basemap:
         self.crs_proj4 = self.crs.proj4_init
         self.basemap_gpd = self.data.to_crs(self.crs_proj4)
 
-    def plotTrack(self, lat, lon, time, h_li, metadata, local = False):
+    def plotTrack(self, lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, local = False):
 
         """
         Plots a single track of data on the basemap
@@ -633,8 +635,10 @@ class Basemap:
               list of longitude points
         time : list
               list of timestamps for each datapoint (seconds since reference epoch)
-        h_li : list
-              list of heights for each datapoint
+        dh_fit_dx : list
+              slope at each datapoint
+        dh_fit_dx_sigma : list
+              propogated error of the slope at each datapoint
         metadata : dict
               metadata for input track. Has the following parameters: name, number, strength, orientation
         """
@@ -689,9 +693,9 @@ class Basemap:
             for track in tracks:
 
                 if datatype == object:
-                    lat, lon, time, height, metadata, granuledata = track.getTrackData() # each item in lasertracks is another tuple which goes as follows (lat, lon, time, height, name)
+                    lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata = track.getTrackData() # each item in lasertracks is another tuple which goes as follows (lat, lon, time, height, name)
                 elif datatype == tuple:
-                    lat, lon, time, height, metadata, granuledata = track
+                    lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata = track
                 alllats = np.append(alllats, lat)
                 alllons = np.append(alllons, lon)
 
@@ -711,14 +715,14 @@ class Basemap:
         for track in tracks:
 
             if datatype == object:
-                lat, lon, time, height, metadata, granuledata = track.getTrackData() # each item in lasertracks is another tuple which goes as follows (lat, lon, time, height, name)
+                lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata = track.getTrackData() # each item in lasertracks is another tuple which goes as follows (lat, lon, time, height, name)
             elif datatype == tuple:
-                lat, lon, time, height, metadata, granuledata = track
+                lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata = track
 
             name = metadata["name"]
 
             track_df = pd.DataFrame(
-                {'time': time, 'height': height, 'lat': lat, 'lon':lon})
+                {'time': time, 'slope': dh_fit_dx, 'slope_err': dh_fit_dx_sigma, 'lat': lat, 'lon':lon})
             track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_df.lon, track_df.lat), crs="EPSG:4326")
 
             if local:

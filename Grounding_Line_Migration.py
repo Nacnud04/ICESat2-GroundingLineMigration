@@ -1,4 +1,5 @@
 import IceSatHDF5Unpacker as unpack
+import FlowUnpacker as flow
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -10,9 +11,11 @@ import time
 
 starttime = time.time()
 
-dataset = unpack.Dataset(r"C:\Users\Nacnu\Documents\IceSat2")
+slopedatabase = flow.slopeDatabase("data/antarctic_ice_vel_phase_map_v01.nc")
 
 midtime = time.time()
+
+dataset = unpack.Dataset(r"C:\Users\Nacnu\Documents\IceSat2")
 
 granule = dataset.openfilename("ATL06_20181114050603_07110110_005_01.h5")
 coverage = granule.captureCoverage()
