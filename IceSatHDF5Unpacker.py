@@ -643,8 +643,7 @@ class Basemap:
               metadata for input track. Has the following parameters: name, number, strength, orientation
         """
 
-        track1l_df = pd.DataFrame(
-            {'time': time, 'height': h_li, 'lat': lat, 'lon':lon})
+        track1l_df = pd.DataFrame({'time': time, 'slope': dh_fit_dx, 'slope_error': dh_fit_dx_sigma, 'lat': lat, 'lon':lon})
         track1l_gdf = gpd.GeoDataFrame(track1l_df, geometry=gpd.points_from_xy(track1l_df.lon, track1l_df.lat), crs="EPSG:4326")
 
         if local == True:
@@ -741,3 +740,9 @@ class Basemap:
     def getCRS(self):
         """Returns the cartopy projection of the crs"""
         return self.crs_proj4
+
+    @staticmethod
+    def transformProjection(geodataframe):
+        crs = ccrs.SouthPolarStereo()
+        crs_proj4 = crs.proj4_init
+        return geodataframe.to_crs(crs_proj4)

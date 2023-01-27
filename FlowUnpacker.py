@@ -1,7 +1,9 @@
 from netCDF4 import Dataset as CDFData
-from math import arctan, sqrt
+from math import atan, sqrt
+import matplotlib.pyplot as plt
+import numpy as np
 
-class slopeDatabase:
+class Database:
 
     def __init__(self, filepath):
         rootgroup = CDFData(filepath, "r", format="NETCDF4")
@@ -11,7 +13,7 @@ class slopeDatabase:
         self.x, self.y = rootgroup.variables["x"][()], rootgroup.variables["y"][()]
 
     def compute_angle(self):
-        self.angle = arctan(self.VY / self.VX)
+        self.angle = np.arctan(self.VY / self.VX)
 
     def compute_speed(self):
         self.speed = sqrt(self.VX**2 + self.VY**2)
