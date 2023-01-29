@@ -429,7 +429,7 @@ class Granule:
             trackdata = trackdata + (laser.getTrackData(),)
         return trackdata
 
-    def getAzumithData(self):
+    def getAzimuthData(self):
         """
         Gathers azumith data from all lasers in track
         
@@ -608,7 +608,7 @@ class Laser:
         time = self.land_ice_segments["delta_time"][()]
         return (lat, lon, time, self.dh_fit_dx, self.dh_fit_dx_sigma, self.metadata, self.granuledata)
 
-    def returnAzumith(self):
+    def returnAzimuth(self):
         """
         Returns laser track azumith data.
 
@@ -617,7 +617,7 @@ class Laser:
         azumith : np.array
             Array of azumith points in radians measured eastward from north.
         """
-        azumith = self.land_ice_segments["ground_track"]["ref_azumith"][()]
+        azumith = self.land_ice_segments["ground_track"]["ref_azimuth"][()]
         return azumith
 
     def returnAcrossTrackSlope(self):
