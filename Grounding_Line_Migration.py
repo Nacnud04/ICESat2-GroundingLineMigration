@@ -41,10 +41,11 @@ def latlonindex_to_grid(lat, lon, time, dh_fit_dx, dh_fit_dx_sigma):
 
     def find_nearest_grid(arrx, arry, valx, valy):
         idx = find_nearest(arrx, valx)
-        idy = find_nearest(arry, valy) 
+        idy = len(arry) - find_nearest(np.flip(arry), valy) 
+        print(idy)
         return idx, idy
 
-    xyindices = basemap_gpd.apply(lambda row: find_nearest_grid(flowdatabase.x, np.flip(flowdatabase.y), row.geometry.x, row.geometry.y), axis=1)
+    xyindices = basemap_gpd.apply(lambda row: find_nearest_grid(flowdatabase.x, flowdatabase.y, row.geometry.x, row.geometry.y), axis=1)
     return xyindices
 
 def rearrange_flow_data(flowdatabase, xyindices):
@@ -68,6 +69,7 @@ def rearrange_angle_data(flowdatabase, xyindices):
     except:
         raise Exception("Angle data for flowdatabase does not exist")
 
+# the magic algorithm
 def angNorth_to_angXY(coord, angle):
     lon, lat = coord
     wgsvec = (lon + math.cos(angle), lat + math.sin(angle))
@@ -101,7 +103,7 @@ def get_flow_slopes(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_a
     along_flow_slope = np.array([calc_along_flow_slope(dh_fit_dx[i], dh_fit_dy[i], dh_fit_dx_sigma[i], slope_azumith[i], flow_ang[i], flow_ang_err[i]) for i in range(len(flow_ang))])
     return along_flow_slope
 
-xyindices = latlonindex_to_grid(lat, lon, time, dh_fit_dx, dh_fit_dx_sigma)
+xyindices = unpack.Basemap.latlonindex_to_grid(lat, lon, flowdatabase)
 flow_angle, flow_angle_error = rearrange_angle_data(flowdatabase, xyindices)
 azumith_in_xy = angleTransform(lon, lat, azumith)
 flowslopes = get_flow_slopes(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, azumith_in_xy, flow_angle, flow_angle_error)

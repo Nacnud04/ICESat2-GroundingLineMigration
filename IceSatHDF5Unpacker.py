@@ -7,6 +7,7 @@ import shapely
 from shapely.geometry import Polygon
 import numpy as np
 from cartopy import crs as ccrs
+import math
 import sys
 
 # hide shapely depreciation warning
@@ -780,6 +781,90 @@ class Basemap:
 
     @staticmethod
     def transformProjection(geodataframe):
+        """
+        Takes in a geodata frame and transforms the data into south polar sterographic
+
+        Reuturns
+        --------
+        gpd : GeoDataFrame
+              Input geodataframe converted into the south polar stereographic coordinate system
+        """
         crs = ccrs.SouthPolarStereo()
         crs_proj4 = crs.proj4_init
         return geodataframe.to_crs(crs_proj4)
+
+    @staticmethod 
+    def find_nearest(array, value, side):
+        """
+        Takes in an array and does a binary search to find the closest value to the desired value.
+
+        Parameters
+        ----------
+        array : numpy array
+              Sorted 1D input array to search through.
+        value : float/int
+              Desired value to search for
+        side : str
+              Side of 1D array with the smallest values. Can be either "left" or "right"
+
+        Returns
+        -------
+        idx : int
+              Index of closest value in array, crs
+        """
+        idx = np.searchsorted(array, value, side=side)
+        if idx > 0 and (idx == len(array) or math.fabs(value - array[idx-1]) < math.fabs(value - array[idx])):
+            return idx
+        else:
+            return idx
+
+    @staticmethod 
+    def find_nearest_grid(arrx, arry, valx, valy):
+        """
+        Takes in a point and finds its nearest point on an xy grid.
+
+        Parameters
+        ----------
+        arrx : numpy.array
+              Increasing list of x values in grid
+        arry : numpy.array
+              Decreasing list of y values in grid
+        valx : int/float
+              X location
+        valy : int/float
+              Y kocation
+
+        Returns
+        -------
+        id : tuple
+              Contains idx, idy. Is the index of the grid for the nearest point to the input x, y.
+        """
+
+        idx = Basemap.find_nearest(arrx, valx, side = "left")
+        idy = len(arry) - Basemap.find_nearest(np.flip(arry), valy, side = "left")
+        print(idy)
+
+        return idx, idy
+
+    @staticmethod 
+    def latlonindex_to_grid(lat, lon, grid):
+        """
+        Takes in a list of longitude and latitude and creates an index of xy points nearest to each lat lon for a given input grid.
+
+        Parameters
+        ----------
+        lat : numpy.array
+            Array of latitude points
+        lon : numpy.array
+            Array of longitude points
+        grid : FlowUnpacker.Dataset
+            Object representing the flow data containing the grid information needed
+        """
+        crs_proj4 = ccrs.SouthPolarStereo().proj4_init
+        crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+        track_df = pd.DataFrame({'lat': lat, 'lon':lon})
+        track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_df.lon, track_df.lat), crs="EPSG:4326")
+        track_gdf = track_gdf.to_crs(crs_proj4)
+        xyindices = track_gdf.apply(lambda row: Basemap.find_nearest_grid(grid.x, grid.y, row.geometry.x, row.geometry.y), axis=1)
+        
+        return xyindices
