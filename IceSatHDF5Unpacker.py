@@ -8,7 +8,8 @@ from shapely.geometry import Polygon
 import numpy as np
 from cartopy import crs as ccrs
 import math
-import sys
+from polar_convert.constants import SOUTH
+from polar_convert import polar_lonlat_to_xy
 
 # hide shapely depreciation warning
 # i dont think the warning is actually an issue???
@@ -868,3 +869,40 @@ class Basemap:
         xyindices = track_gdf.apply(lambda row: Basemap.find_nearest_grid(grid.x, grid.y, row.geometry.x, row.geometry.y), axis=1)
         
         return xyindices
+
+    # the magic algorithm
+    @staticmethod
+    def angNorth_to_angXY(coord, angle):
+        """
+        Takes in an angle from north at a certain coordinate and returns degrees from x in the xy grid.
+        Returns angle from x in the south polar stereographic projection.
+
+        Parameters
+        ----------
+        coord : tuple
+              (lat, lon) - Coordinate at which angle is from
+        angle : float
+              Angle in radians from north going eastwards
+
+        Returns
+        -------
+        angle : float
+              Angle from x in radians on the xy plane.
+        """
+        lon, lat = coord
+        wgsvec = (lon + math.cos(angle), lat + math.sin(angle))
+        true_scale_lat = 71
+        re = 6378.137
+        e = 0.01671
+        hemisphere = SOUTH
+        origxy = polar_lonlat_to_xy(lon, lat, true_scale_lat, re, e, hemisphere)
+        newxy = polar_lonlat_to_xy(wgsvec[0], wgsvec[1], true_scale_lat, re, e, hemisphere)
+        vecxy = [newxy[i] - origxy[i] for i in range(2)]
+        angle = math.atan(vecxy[1]/vecxy[0])
+        return angle
+
+    @staticmethod 
+    def angleTransform(lon, lat, azumith):
+        """Performs angNorth_to_angXY on an array of data"""
+        angles= np.array([Basemap.angNorth_to_angXY((lon[i], lat[i]), azumith[i]) for i in range(len(lon))])
+        return angles
