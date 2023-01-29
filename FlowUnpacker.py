@@ -1,5 +1,4 @@
 from netCDF4 import Dataset as CDFData
-from math import atan, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -16,10 +15,10 @@ class Database:
         self.angle = np.arctan(self.VY / self.VX)
 
     def compute_speed(self):
-        self.speed = sqrt(self.VX**2 + self.VY**2)
+        self.speed = np.sqrt(self.VX**2 + self.VY**2)
 
     def compute_error(self):
-        self.error = sqrt(self.ERRX**2 + self.ERRY**2)
+        self.error = np.sqrt(self.ERRX**2 + self.ERRY**2)
 
     def compute_angle_error(self):
         try:

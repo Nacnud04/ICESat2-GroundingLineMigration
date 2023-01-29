@@ -10,14 +10,15 @@ from cartopy import crs as ccrs
 #basemap = unpack.Basemap(path)
 
 flowdatabase = flow.Database("data/antarctic_ice_vel_phase_map_v01.nc")
-flowdatabase.compute_angle()
+flowdatabase.compute_all()
 
 dataset = unpack.Dataset(r"C:\Users\Nacnu\Documents\IceSat2")
 
 granule = dataset.openfilename("ATL06_20181114050603_07110110_005_01.h5")
 lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, granuledata = granule.laser1l.getTrackData()
+azumith = granule.laser1l.returnAzumith()
 
-def latlonindex_to_grid(lat, lon, time, dh_fit_dh, dh_fit_dx_sigma):
+def latlonindex_to_grid(lat, lon, time, dh_fit_dx, dh_fit_dx_sigma):
     crs = ccrs.SouthPolarStereo()
     crs_proj4 = crs.proj4_init
 
@@ -54,3 +55,19 @@ def rearrange_flow_data(flowdatabase, xyindices):
         TOTERR = np.array([flowdatabase.error[idx, idy] for idx, idy in xyindices])
     if flowdatabase.angle_error:
         ANGERR = np.array([flowdatabase.angle_error[idx, idy] for idx, idy in xyindices])
+    return ERR, VEL, ANG, SPD, TOTERR, ANGERR
+
+def rearrange_angle_data(flowdatabase, xyindices):
+    try:
+        ANG = np.array([flowdatabase.angle[idx, idy] for idx, idy in xyindices])
+        ANGERR = np.array([flowdatabase.angle_error[idx, idy] for idx, idy in xyindices])
+        return ANG, ANGERR
+    except:
+        raise Exception("Angle data for flowdatabase does not exist")
+
+def calc_along_flow_slope(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_ang, flow_ang_err):
+    
+    pass
+
+xyindices = latlonindex_to_grid(lat, lon, time, dh_fit_dx, dh_fit_dx_sigma)
+ANG, ANGERR = rearrange_angle_data(flowdatabase, xyindices)
