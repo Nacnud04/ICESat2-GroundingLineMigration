@@ -657,7 +657,7 @@ class Basemap:
         self.data = gpd.read_file(path)
 
         self.crs = ccrs.SouthPolarStereo()
-        self.crs_proj4 = self.crs.proj4_init
+        self.crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
         self.basemap_gpd = self.data.to_crs(self.crs_proj4)
 
     def plotTrack(self, lat, lon, time, dh_fit_dx, dh_fit_dx_sigma, metadata, local = False):
