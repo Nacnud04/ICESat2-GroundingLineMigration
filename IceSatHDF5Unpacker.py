@@ -843,7 +843,6 @@ class Basemap:
 
         idx = Basemap.find_nearest(arrx, valx, side = "left")
         idy = len(arry) - Basemap.find_nearest(np.flip(arry), valy, side = "left")
-        print(idy)
 
         return idx, idy
 
@@ -855,54 +854,63 @@ class Basemap:
         Parameters
         ----------
         lat : numpy.array
-            Array of latitude points
+              Array of latitude points
         lon : numpy.array
-            Array of longitude points
+              Array of longitude points
         grid : FlowUnpacker.Dataset
-            Object representing the flow data containing the grid information needed
+              Object representing the flow data containing the grid information needed
+
+        Returns
+        -------
+        xyindices : list
+              List of indexes for the x and y values of the flow data to assign to the slope data
+        xvals : list
+              List of x positions of the slope data
+        yvals : list
+              List of y positions of the slope data
         """
         crs_proj4 = ccrs.SouthPolarStereo().proj4_init
         crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
         track_df = pd.DataFrame({'lat': lat, 'lon':lon})
         track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_df.lon, track_df.lat), crs="EPSG:4326")
         track_gdf = track_gdf.to_crs(crs_proj4)
+        track = np.array([(point.x, point.y) for point in track_gdf.geometry])
         xyindices = track_gdf.apply(lambda row: Basemap.find_nearest_grid(grid.x, grid.y, row.geometry.x, row.geometry.y), axis=1)
         
-        return xyindices
+        return xyindices, track[:,0], track[:,1]
 
     # the magic algorithm
     @staticmethod
-    def angNorth_to_angXY(coord, angle):
+    def XYvec_to_ang(origin, vector):
         """
         Takes in an angle from north at a certain coordinate and returns degrees from x in the xy grid.
         Returns angle from x in the south polar stereographic projection.
 
         Parameters
         ----------
-        coord : tuple
-              (lat, lon) - Coordinate at which angle is from
-        angle : float
-              Angle in radians from north going eastwards
+        origin : tuple
+              (x, y) - Coordinate at which angle is from
+        vector : tuple
+              (x, y) - Point which forms vector
 
         Returns
         -------
         angle : float
               Angle from x in radians on the xy plane.
         """
-        lon, lat = coord
-        wgsvec = (lon + math.cos(angle), lat + math.sin(angle))
-        true_scale_lat = 71
-        re = 6378.137
-        e = 0.01671
-        hemisphere = SOUTH
-        origxy = polar_lonlat_to_xy(lon, lat, true_scale_lat, re, e, hemisphere)
-        newxy = polar_lonlat_to_xy(wgsvec[0], wgsvec[1], true_scale_lat, re, e, hemisphere)
-        vecxy = [newxy[i] - origxy[i] for i in range(2)]
-        angle = math.atan(vecxy[1]/vecxy[0])
+        dx = vector[0] - origin[0]
+        dy = vector[1] - origin[1]
+        angle = math.atan(dy/dx)
         return angle
 
     @staticmethod 
-    def angleTransform(lon, lat, azumith):
+    def angleTransform(xvals, yvals):
         """Performs angNorth_to_angXY on an array of data"""
-        angles= np.array([Basemap.angNorth_to_angXY((lon[i], lat[i]), azumith[i]) for i in range(len(lon))])
+        angles = []
+        for i in range(len(xvals)):
+            if i >= 0 and i < len(xvals) - 1:
+                angles.append(Basemap.XYvec_to_ang((xvals[i], yvals[i]),(xvals[i+1], yvals[i+1])))
+            elif i == len(xvals) - 1:
+                angles.append(Basemap.XYvec_to_ang((xvals[i-1], yvals[i-1]),(xvals[i], yvals[i])))
+        angles = np.array(angles)
         return angles
