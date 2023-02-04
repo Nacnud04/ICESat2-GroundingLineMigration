@@ -3,16 +3,10 @@ import h5py
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
-import shapely
 from shapely.geometry import Polygon
 import numpy as np
 from cartopy import crs as ccrs
 import math
-from polar_convert.constants import SOUTH
-from polar_convert import polar_lonlat_to_xy
-
-# hide shapely depreciation warning
-# i dont think the warning is actually an issue???
 
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
