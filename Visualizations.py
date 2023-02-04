@@ -47,3 +47,19 @@ class Angles:
         ax.plot([0, cos(flowdirec)], [0, sin(flowdirec)], [0, 0], color="blue")
         ax.plot([0, f_hat[0]], [0, f_hat[1]], [0, f_hat[2]], color="blue")
         plt.show()
+
+
+class Polygons():
+
+    def __init__(self):
+        pass
+
+    @staticmethod 
+    def line_buffer(basemap, line, buff):
+        crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+        basemap_gpd = basemap.to_crs(crs_proj4)
+        fig, ax = plt.subplots(1,1,sharex=True,sharey=True,figsize=(11,11))
+        basemap_gpd.plot(ax = ax, color="white", edgecolor="black")
+        buff.plot(ax = ax, color = "lightblue", edgecolor = "steelblue", alpha = 0.5)
+        line.plot(ax = ax, color = "crimson")
+        plt.show()
