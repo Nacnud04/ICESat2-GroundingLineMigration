@@ -77,20 +77,20 @@ class Dataset:
         self.datafiles = [f for f in files if f.split('.')[-1] == "h5"]
 
         ## group similar/overlapping files
-        self.coverage = {}
-        for datafile in self.datafiles:
-            granule = Granule(self.folder, datafile)
-            rgts, (start_region, end_region) = granule.getGranulePath()
-            for region in range(start_region, end_region+1):
-                for rgt in [x for i, x in enumerate(rgts) if i == 0 or x != rgts[1]]:
-                    if region not in self.coverage:
-                        self.coverage[region] = {rgt:[granule.filename]}
-                    else:
-                        if rgt not in self.coverage[region]:
-                            self.coverage[region][rgt] = [granule.filename]
-                        if granule.filename not in self.coverage[region][rgt]:
-                            self.coverage[region][rgt].append(granule.filename)
-            del granule
+        #self.coverage = {}
+        #for datafile in self.datafiles:
+        #    granule = Granule(self.folder, datafile)
+        #    rgts, (start_region, end_region) = granule.getGranulePath()
+        #    for region in range(start_region, end_region+1):
+        #        for rgt in [x for i, x in enumerate(rgts) if i == 0 or x != rgts[1]]:
+        #            if region not in self.coverage:
+        #                self.coverage[region] = {rgt:[granule.filename]}
+        #            else:
+        #                if rgt not in self.coverage[region]:
+        #                    self.coverage[region][rgt] = [granule.filename]
+        #                if granule.filename not in self.coverage[region][rgt]:
+        #                    self.coverage[region][rgt].append(granule.filename)
+        #    del granule
 
     def coverageReport(self):
         """
@@ -186,13 +186,13 @@ class Dataset:
                     filenames.extend(self.coverage[highkey][lowkey])
         return filenames
 
-    def returnFilenamesByPolygon(self, polygon):
+    def returnFilenamesByPolygon(self, polygons):
         """
         Take a polygon and return all filenames which have data within the desired polygon
 
         Parameters
         ----------
-        polygon : class shapely.Polygon
+        polygon : shapely.polygon
               Polygon for which to extract data from
 
         Returns
@@ -200,11 +200,20 @@ class Dataset:
         filenames : list
               List of filenames within the polygon
         """
+
+        #pd.concat([polygon_series.contains(point) for point in point_series], axis=1)
+
+        files = []
+
+        crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+
         for filename in self.datafiles:
             granule = self.openfilename(filename)
-            granpoly = granule.captureCoverage()
-            if polygon.overlaps(granpoly).any() == True:
-                yield filename
+            granpoly = granule.captureCoverage().to_crs(crs_proj4)[0]
+            for polygon in polygons.geometry:
+                if polygon.intersects(granpoly) == True:
+                    files.append(filename)
+        return files
 
     def returnTrackDataByRegion(self, region, orientation=None, name=None, num=None, strength=None):
         """
