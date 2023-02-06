@@ -8,11 +8,35 @@ import numpy as np
 
 class Angles:
 
+    """
+    Allows for trivial visualizations of parameters related to angles
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def visualize_ang_xy(basemap, xs, ys, azumiths, vectorlength:float, fill:int):
+        """
+        Visualize the azumith of the track at regular point intervals
+
+        Parameters
+        ----------
+        basemap : GeoDataFrame
+              Geodataframe of antarctica basemap.
+        xs : List
+              List of projected x values of track in polar stereographic projection
+        ys : List
+              List of projected y values of track in polar stereographic projection
+        azumiths : List
+              Azumiths in radians from the x axis going counter clockwise.
+        vectorlength : Float
+              Length of vector to generate which shows azumith direction
+        fill : Int
+              Number designating how many points should be plotted.
+              The number plotted is the inverse of this value.
+              So 100 is 1% of points
+        """
         crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
 
         basemap_gpd = basemap.to_crs(crs_proj4)
@@ -33,6 +57,22 @@ class Angles:
 
     @staticmethod 
     def flowslope(dh_fit_dx, dh_fit_dy, azumith, flowdirec, flowslope):
+        """
+        Plots the vectors used to calculate the slope in the direction of flow in 3d
+
+        Parameters
+        ----------
+        dh_fit_dx : Float
+              Slope in the track direction
+        dh_fit_dy : Float
+              Slope in the across track direction
+        azumith : Float
+              Radians of slope direction from x axis counterclockwise
+        flowdirec : Float
+              Radians of flow direction from x axis counterclockwise
+        flowslope : Float
+              Slope in the direction of flow
+        """
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         trackslope = np.array([cos(azumith), sin(azumith), dh_fit_dx])
@@ -51,11 +91,27 @@ class Angles:
 
 class Polygons():
 
+    """
+    Visualize polygon data
+    """
+
     def __init__(self):
         pass
 
     @staticmethod 
     def line_buffer(basemap, line, buff):
+        """
+        Allows for visualization of the grounding line with a set buffer around it
+
+        Parameters
+        ----------
+        basemap : GeoDataFrame
+              Basemap data of antarctica
+        line : GeoSeries
+              Grounding line geodataframe
+        buff : GeoSeries
+              Grounding line buffer geodataframe
+        """
         crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
         basemap_gpd = basemap.to_crs(crs_proj4)
         fig, ax = plt.subplots(1,1,sharex=True,sharey=True,figsize=(11,11))
