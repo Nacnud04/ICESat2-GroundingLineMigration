@@ -1,7 +1,9 @@
+from doctest import ELLIPSIS_MARKER
 from netCDF4 import Dataset as CDFData
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import warnings
 
 class Database:
     """
@@ -31,12 +33,14 @@ class Database:
     y : numpy.array 
           Y location of each datapoint
     """
+    
     def __init__(self, filepath):
+        # use .filled to stop masked array and fill mask with nan values
         rootgroup = CDFData(filepath, "r", format="NETCDF4")
-        self.ERRX, self.ERRY = rootgroup.variables["ERRX"][()], rootgroup.variables["ERRY"][()]
-        self.lat, self.lon = rootgroup.variables["lat"][()], rootgroup.variables["lon"][()]
-        self.VX, self.VY = rootgroup.variables["VX"][()], rootgroup.variables["VY"][()]
-        self.x, self.y = rootgroup.variables["x"][()], rootgroup.variables["y"][()]
+        self.ERRX, self.ERRY = rootgroup.variables["ERRX"][()].filled(np.nan), rootgroup.variables["ERRY"][()].filled(np.nan)
+        self.lat, self.lon = rootgroup.variables["lat"][()].filled(np.nan), rootgroup.variables["lon"][()].filled(np.nan)
+        self.VX, self.VY = rootgroup.variables["VX"][()].filled(np.nan), rootgroup.variables["VY"][()].filled(np.nan)
+        self.x, self.y = rootgroup.variables["x"][()].filled(np.nan), rootgroup.variables["y"][()].filled(np.nan)
 
     def compute_angle(self):
         """Computes the angle of the ice velocity in radians from the X axis"""
@@ -153,12 +157,24 @@ class Database:
         else:
             return slopeflowgrade
 
-    @staticmethod
-    def get_flow_slopes(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_ang, flow_ang_err):
+    def get_flow_slopes(self, dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_ang, flow_ang_err):
         """Performs calc_along_flow_slope on an array of data"""
+        dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, flow_ang, flow_ang_err = np.array(dh_fit_dx), np.array(dh_fit_dy), np.array(dh_fit_dx_sigma), np.array(flow_ang), np.array(flow_ang_err)
         along_flow_slope = np.array([Database.calc_along_flow_slope(dh_fit_dx[i], dh_fit_dy[i], dh_fit_dx_sigma[i], slope_azumith[i], flow_ang[i], flow_ang_err[i]) for i in range(len(flow_ang))])
+        self.along_flow_slope = along_flow_slope
         return along_flow_slope
+
+    def rolling_average(self, w):
+
+        self.along_flow_slope_avg = None
+        return self.along_flow_slope_avg
 
     def close(self):
         """Closes the dataset"""
         self.rootgroup.close()
+
+    def plot_angles(self):
+        image = plt.imshow(self.angle)
+        plt.colorbar()
+        plt.show()
+

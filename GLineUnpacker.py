@@ -9,6 +9,8 @@ class GLineData():
     ----------
     filepath : str
           Path to shapefile containing grounding line data
+    bufferize : int
+          Radius in meters around grounding line to generate buffer
 
     Variables
     ---------
@@ -20,13 +22,13 @@ class GLineData():
           Polygon with 100km radius around grounding line.
     """
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, buffersize):
         
         data = gpd.read_file(filepath)
         self.crs_proj4 = "+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
         self.linedata = data.to_crs(self.crs_proj4)
         
-        self.linepolygon = self.generateBuffer(100000)
+        self.linepolygon = self.generateBuffer(buffersize)
 
     def generateBuffer(self, buffersize):
 

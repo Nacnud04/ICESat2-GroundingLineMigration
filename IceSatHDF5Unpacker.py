@@ -7,6 +7,7 @@ from shapely.geometry import Polygon
 import numpy as np
 from cartopy import crs as ccrs
 import math
+from scipy.interpolate import griddata
 
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
@@ -878,6 +879,7 @@ class Basemap:
         track_gdf = gpd.GeoDataFrame(track_df, geometry=gpd.points_from_xy(track_df.lon, track_df.lat), crs="EPSG:4326")
         track_gdf = track_gdf.to_crs(crs_proj4)
         track = np.array([(point.x, point.y) for point in track_gdf.geometry])
+
         xyindices = track_gdf.apply(lambda row: Basemap.find_nearest_grid(grid.x, grid.y, row.geometry.x, row.geometry.y), axis=1)
         
         return xyindices, track[:,0], track[:,1]
