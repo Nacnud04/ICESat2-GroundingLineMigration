@@ -145,6 +145,10 @@ class Dataset:
         granule = Granule(self.folder, filename)
 
         return granule
+    
+    def opens3(self, link, s3):
+        granule = Granule(self.folder, link, s3=s3, linked=True)
+        return granule
 
     # analyzes self.coverage 
     def returnFilenamesByRegion(self, region):
@@ -383,12 +387,15 @@ class Granule:
           contains all Laser objects for easier interpretation
     """
 
-    def __init__(self, folder:str, filename:str):
+    def __init__(self, folder:str, filename:str, s3=None, linked = False):
 
         self.folder = folder
         self.filename = filename
-
-        filedata = h5py.File(f'{self.folder}/{self.filename}','r')
+        
+        if linked == False:
+            filedata = h5py.File(f'{self.folder}/{self.filename}','r')
+        elif linked == True:
+            filedata = h5py.File(s3.open(filename,'rb'),'r')
 
         # capture data for matching of granules
         self.start_rgt, self.end_rgt = filedata["ancillary_data"]["start_rgt"][0], filedata["ancillary_data"]["end_rgt"][0]
