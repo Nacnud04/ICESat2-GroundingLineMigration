@@ -417,6 +417,8 @@ class Granule:
         self.laser3l, self.laser3r = Laser(filedata["gt3l"],"gt3l", filename, self.metadata), Laser(filedata["gt3r"],"gt3r", filename, self.metadata)
 
         self.lasers = (self.laser1l, self.laser1r, self.laser2l, self.laser2r, self.laser3l, self.laser3r)
+        
+        self.sc_orient = filedata["orbit_info"]["sc_orient"]
 
     def getGranulePath(self):
         """
@@ -891,12 +893,10 @@ class Basemap:
         
         return xyindices, track[:,0], track[:,1]
 
-    # the magic algorithm
     @staticmethod
     def XYvec_to_ang(origin, vector):
         """
-        Takes in an angle from north at a certain coordinate and returns degrees from x in the xy grid.
-        Returns angle from x in the south polar stereographic projection.
+        Takes an xy vector and returns the amount of degrees from the north axis it is.
 
         Parameters
         ----------

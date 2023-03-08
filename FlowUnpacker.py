@@ -121,7 +121,7 @@ class Database:
 
     # known to work perfectly.
     @staticmethod
-    def calc_along_flow_slope(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_ang, flow_ang_err):
+    def calc_along_flow_slope(dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, ascending, slope_azumith, flow_ang, flow_ang_err):
         """
         Takes the slope and across track slope and compute the slope in the direction of flow
 
@@ -139,7 +139,9 @@ class Database:
               Direction of flow in the xy plane
         flow_ang_error : int/float
               Error in the direction of flow
-
+        sc_orient : int
+              Int which says the direction of orbit.
+    
         Returns
         -------
         None : None
@@ -148,7 +150,16 @@ class Database:
               Predicted slope in direction of flow
         """
         slopevec = np.array([math.cos(slope_azumith), math.sin(slope_azumith), dh_fit_dx])
-        acrossslopevec = np.array([math.sin(slope_azumith), -1*math.cos(slope_azumith), dh_fit_dy])
+        slopevec = slopevec / (slopevec **2).sum()**0.5
+        if ascending == 1:# and slope_azumith < 1:
+            acrossslopevec = np.array([math.sin(slope_azumith), -1*math.cos(slope_azumith), dh_fit_dy])
+            acrossslopevec = acrossslopevec / (acrossslopevec**2).sum()**0.5
+        elif ascending == -1:# or slope_azumith > 1:
+            #slope_azumith = slope_azumith * -1
+            acrossslopevec = np.array([-1*math.sin(slope_azumith), math.cos(slope_azumith), dh_fit_dy])
+            acrossslopevec = acrossslopevec / (acrossslopevec**2).sum()**0.5
+        else:
+            return None
         flowvec = np.array([math.cos(flow_ang), math.sin(flow_ang), 0])
         slopeflowvec = (flowvec.dot(slopevec)/slopevec.dot(slopevec))*slopevec+(flowvec.dot(acrossslopevec)/acrossslopevec.dot(acrossslopevec))*acrossslopevec
         slopeflowgrade = slopeflowvec[2] / math.sqrt(slopeflowvec[0]**2 + slopeflowvec[1]**2)
@@ -157,10 +168,10 @@ class Database:
         else:
             return slopeflowgrade
 
-    def get_flow_slopes(self, dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, slope_azumith, flow_ang, flow_ang_err):
+    def get_flow_slopes(self, dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, ascending, slope_azumith, flow_ang, flow_ang_err):
         """Performs calc_along_flow_slope on an array of data"""
         dh_fit_dx, dh_fit_dy, dh_fit_dx_sigma, flow_ang, flow_ang_err = np.array(dh_fit_dx), np.array(dh_fit_dy), np.array(dh_fit_dx_sigma), np.array(flow_ang), np.array(flow_ang_err)
-        along_flow_slope = np.array([Database.calc_along_flow_slope(dh_fit_dx[i], dh_fit_dy[i], dh_fit_dx_sigma[i], slope_azumith[i], flow_ang[i], flow_ang_err[i]) for i in range(len(flow_ang))])
+        along_flow_slope = np.array([Database.calc_along_flow_slope(dh_fit_dx[i], dh_fit_dy[i], dh_fit_dx_sigma[i], ascending[i], slope_azumith[i], flow_ang[i], flow_ang_err[i]) for i in range(len(flow_ang))])
         self.along_flow_slope = along_flow_slope
         return along_flow_slope
 
